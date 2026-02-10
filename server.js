@@ -23,6 +23,9 @@ let drivers = [
   },
 ];
 
+// ⭐⭐⭐ طلبات الاشتراك الجديدة
+let subscriptionRequests = [];
+
 /* ========================= */
 
 app.get("/", (req, res) => {
@@ -37,7 +40,6 @@ app.post("/order", (req, res) => {
   const order = {
     id: Date.now().toString(),
 
-    // البيانات القديمة كما هي
     name: req.body.name,
     phone: req.body.phone,
     address: req.body.address,
@@ -45,7 +47,6 @@ app.post("/order", (req, res) => {
     lat: req.body.lat,
     lng: req.body.lng,
 
-    // إضافات جديدة
     status: "pending",
     driverId: null,
     date: new Date(),
@@ -60,12 +61,10 @@ app.post("/order", (req, res) => {
    عرض الطلبات
 ========================= */
 
-// كل الطلبات
 app.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-// الطلبات الجديدة فقط
 app.get("/orders/pending", (req, res) => {
   const pending = orders.filter((o) => o.status === "pending");
   res.json(pending);
@@ -74,6 +73,59 @@ app.get("/orders/pending", (req, res) => {
 /* =========================
    السائق
 ========================= */
+
+/// ⭐⭐⭐ طلب اشتراك جديد
+app.post("/driver/request-subscription", (req, res) => {
+  const { phone, password } = req.body;
+
+  const exists = drivers.find((d) => d.phone === phone);
+  if (exists) {
+    return res.json({ success: false, message: "السائق موجود مسبقاً" });
+  }
+
+  subscriptionRequests.push({
+    id: Date.now().toString(),
+    phone,
+    password,
+  });
+
+  res.json({ success: true, message: "تم إرسال الطلب" });
+});
+
+/// ⭐⭐⭐ عرض طلبات الاشتراك (للأدمن)
+app.get("/admin/subscription-requests", (req, res) => {
+  res.json(subscriptionRequests);
+});
+
+/// ⭐⭐⭐ قبول طلب الاشتراك (الأدمن)
+app.post("/admin/approve-driver", (req, res) => {
+  const { requestId } = req.body;
+
+  const request = subscriptionRequests.find((r) => r.id === requestId);
+
+  if (!request) {
+    return res.json({ success: false, message: "الطلب غير موجود" });
+  }
+
+  const newDriver = {
+    id: Date.now().toString(),
+    name: "Driver",
+    phone: request.phone,
+    password: request.password,
+    subscribed: true,
+    active: false,
+    totalOrders: 0,
+  };
+
+  drivers.push(newDriver);
+
+  // نحذف الطلب بعد القبول
+  subscriptionRequests = subscriptionRequests.filter(
+    (r) => r.id !== requestId
+  );
+
+  res.json({ success: true });
+});
 
 // تسجيل الدخول
 app.post("/driver/login", (req, res) => {
@@ -154,7 +206,6 @@ app.post("/order/done", (req, res) => {
    الأدمن - الإحصائيات
 ========================= */
 
-// عدد الطلبات اليوم
 app.get("/stats/today", (req, res) => {
   const today = new Date().toDateString();
 
@@ -165,24 +216,20 @@ app.get("/stats/today", (req, res) => {
   res.json({ count });
 });
 
-// الطلبات المكتملة
 app.get("/stats/completed", (req, res) => {
   const count = orders.filter((o) => o.status === "done").length;
   res.json({ count });
 });
 
-// الطلبات الملغية
 app.get("/stats/canceled", (req, res) => {
   const count = orders.filter((o) => o.status === "cancel").length;
   res.json({ count });
 });
 
-// عدد السواق
 app.get("/stats/drivers", (req, res) => {
   res.json({ count: drivers.length });
 });
 
-// السواق النشطين
 app.get("/stats/activeDrivers", (req, res) => {
   const count = drivers.filter((d) => d.active).length;
   res.json({ count });
