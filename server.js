@@ -235,6 +235,31 @@ app.get("/stats/activeDrivers", (req, res) => {
   res.json({ count });
 });
 
+/* =========================
+   الأدمن - طلبات الاشتراك
+========================= */
+
+// عرض طلبات الاشتراك
+app.get("/admin/subscription-requests", (req, res) => {
+  const list = drivers.filter((d) => d.subscribed === false);
+  res.json(list);
+});
+
+// الموافقة على السائق
+app.post("/admin/approve-driver", (req, res) => {
+  const { driverId } = req.body;
+
+  const driver = drivers.find((d) => d.id === driverId);
+
+  if (!driver) {
+    return res.json({ success: false, message: "السائق غير موجود" });
+  }
+
+  driver.subscribed = true;
+
+  res.json({ success: true });
+});
+         
 /* ========================= */
 
 const PORT = process.env.PORT || 3000;
