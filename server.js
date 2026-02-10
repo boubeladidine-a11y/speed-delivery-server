@@ -241,8 +241,7 @@ app.get("/stats/activeDrivers", (req, res) => {
 
 // عرض طلبات الاشتراك
 app.get("/admin/subscription-requests", (req, res) => {
-  const list = drivers.filter((d) => d.subscribed === false);
-  res.json(list);
+  res.json(subscriptionRequests);
 });
 
 // الموافقة على السائق
