@@ -11,17 +11,7 @@ app.use(express.json());
 
 let orders = [];
 
-let drivers = [
-  {
-    id: "1",
-    name: "Driver 1",
-    phone: "0550000000",
-    password: "1234",
-    subscribed: true,
-    active: false,
-    totalOrders: 0,
-  },
-];
+let drivers = [];
 
 let subscriptionRequests = [];
 
@@ -64,10 +54,6 @@ app.post("/order", (req, res) => {
    عرض الطلبات
 ========================= */
 
-app.get("/orders", (req, res) => {
-  res.json(orders);
-});
-
 app.get("/orders/pending", (req, res) => {
   res.json(orders.filter((o) => o.status === "pending"));
 });
@@ -101,23 +87,27 @@ app.post("/driver/request-subscription", (req, res) => {
 });
 
 /* =========================
-   الأدمن - طلبات الاشتراك
+   الأدمن - عرض طلبات الاشتراك
 ========================= */
 
-// عرض الطلبات
 app.get("/admin/subscription-requests", (req, res) => {
   res.json(subscriptionRequests);
 });
 
-// قبول الطلب وتحويله لسائق
+/* =========================
+   الأدمن - قبول الطلب
+========================= */
+
 app.post("/admin/approve-request", (req, res) => {
   const { requestId } = req.body;
 
   const request = subscriptionRequests.find((r) => r.id === requestId);
+
   if (!request) {
     return res.json({ success: false, message: "الطلب غير موجود" });
   }
 
+  // إنشاء السائق كمفعل
   drivers.push({
     id: Date.now().toString(),
     name: "Driver",
@@ -128,6 +118,7 @@ app.post("/admin/approve-request", (req, res) => {
     totalOrders: 0,
   });
 
+  // حذف الطلب من قائمة الانتظار
   subscriptionRequests = subscriptionRequests.filter(
     (r) => r.id !== requestId
   );
@@ -180,6 +171,7 @@ app.post("/order/accept", (req, res) => {
   const { orderId, driverId } = req.body;
 
   const order = orders.find((o) => o.id === orderId);
+
   if (!order) {
     return res.json({ success: false, message: "الطلب غير موجود" });
   }
@@ -202,6 +194,7 @@ app.post("/order/done", (req, res) => {
   const { orderId, driverId } = req.body;
 
   const order = orders.find((o) => o.id === orderId);
+
   if (!order) {
     return res.json({ success: false, message: "الطلب غير موجود" });
   }
@@ -216,52 +209,6 @@ app.post("/order/done", (req, res) => {
   if (driver) driver.totalOrders++;
 
   res.json({ success: true });
-});
-
-/* =========================
-   إلغاء الطلب
-========================= */
-
-app.post("/order/cancel", (req, res) => {
-  const { orderId } = req.body;
-
-  const order = orders.find((o) => o.id === orderId);
-  if (!order) {
-    return res.json({ success: false, message: "الطلب غير موجود" });
-  }
-
-  order.status = "cancel";
-
-  res.json({ success: true });
-});
-
-/* =========================
-   الإحصائيات
-========================= */
-
-app.get("/stats/today", (req, res) => {
-  const today = new Date().toDateString();
-  const count = orders.filter(
-    (o) => new Date(o.date).toDateString() === today
-  ).length;
-
-  res.json({ count });
-});
-
-app.get("/stats/completed", (req, res) => {
-  res.json({ count: orders.filter((o) => o.status === "done").length });
-});
-
-app.get("/stats/canceled", (req, res) => {
-  res.json({ count: orders.filter((o) => o.status === "cancel").length });
-});
-
-app.get("/stats/drivers", (req, res) => {
-  res.json({ count: drivers.length });
-});
-
-app.get("/stats/activeDrivers", (req, res) => {
-  res.json({ count: drivers.filter((d) => d.active).length });
 });
 
 /* ========================= */
